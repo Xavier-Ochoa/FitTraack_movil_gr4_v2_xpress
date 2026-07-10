@@ -66,16 +66,24 @@ export const analizarTextoNutricional = async (queryText) => {
         )
     }
 
+    // API Ninjas a veces devuelve los campos numéricos como strings
+    // (ej. "protein_g": "13.0"), así que forzamos conversión a número
+    // antes de sumar/operar para evitar concatenación de texto.
+    const aNumero = (valor) => {
+        const n = Number(valor)
+        return Number.isFinite(n) ? n : 0
+    }
+
     // API Ninjas devuelve un array con un objeto por cada alimento
     // detectado en el texto, cada uno con sus propios macros. Sumamos
     // todo para reportar el total de la comida, y devolvemos también
     // el desglose por alimento en `foods`.
     const totales = items.reduce(
         (acc, item) => ({
-            calories: acc.calories + (item.calories || 0),
-            proteinG: acc.proteinG + (item.protein_g || 0),
-            carbsG: acc.carbsG + (item.carbohydrates_total_g || 0),
-            fatG: acc.fatG + (item.fat_total_g || 0),
+            calories: acc.calories + aNumero(item.calories),
+            proteinG: acc.proteinG + aNumero(item.protein_g),
+            carbsG: acc.carbsG + aNumero(item.carbohydrates_total_g),
+            fatG: acc.fatG + aNumero(item.fat_total_g),
         }),
         { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 }
     )
@@ -87,11 +95,11 @@ export const analizarTextoNutricional = async (queryText) => {
         fatG: Number(totales.fatG.toFixed(1)),
         foods: items.map((item) => ({
             name: item.name,
-            calories: Math.round(item.calories || 0),
-            proteinG: Number((item.protein_g || 0).toFixed(1)),
-            carbsG: Number((item.carbohydrates_total_g || 0).toFixed(1)),
-            fatG: Number((item.fat_total_g || 0).toFixed(1)),
-            servingSizeG: item.serving_size_g,
+            calories: Math.round(aNumero(item.calories)),
+            proteinG: Number(aNumero(item.protein_g).toFixed(1)),
+            carbsG: Number(aNumero(item.carbohydrates_total_g).toFixed(1)),
+            fatG: Number(aNumero(item.fat_total_g).toFixed(1)),
+            servingSizeG: aNumero(item.serving_size_g),
         })),
     }
 }
